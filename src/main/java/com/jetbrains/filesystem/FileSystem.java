@@ -124,6 +124,20 @@ public class FileSystem implements AutoCloseable {
         fileHandler.flushHeaders();
     }
 
+    public void removeFile(final String path) throws IOException {
+
+        validatePath(path);
+
+        final String[] directories = path.split("/");
+        final DirectoryNode parentDirectory = getPenultimateNode(directories);
+        final FileNode fileToRemove = parentDirectory.getFile(directories[directories.length - 1]);
+
+        parentDirectory.remove(fileToRemove.getName());
+        fileHandler.removeFile(fileToRemove);
+
+        fileHandler.flushHeaders();
+    }
+
     public void rename(final String path, final String newName) throws IOException {
 
         validatePath(path);
@@ -162,6 +176,32 @@ public class FileSystem implements AutoCloseable {
         fileHandler.flushHeaders();
     }
 
+    public void writeToFile(final String path, final byte[] contents) throws IOException {
+
+        validatePath(path);
+
+        final String[] nodeNames = path.split("/");
+        final DirectoryNode parentDirectory = getPenultimateNode(nodeNames);
+
+        final FileNode file = parentDirectory.getFile(nodeNames[nodeNames.length - 1]);
+
+        fileHandler.writeToFile(file, contents);
+        fileHandler.flushHeaders();
+    }
+
+    public void appendToFile(final String path, final byte[] contents) throws IOException {
+
+        validatePath(path);
+
+        final String[] nodeNames = path.split("/");
+        final DirectoryNode parentDirectory = getPenultimateNode(nodeNames);
+
+        final FileNode file = parentDirectory.getFile(nodeNames[nodeNames.length - 1]);
+
+        fileHandler.appendToFile(file, contents);
+        fileHandler.flushHeaders();
+    }
+
     public long getFileSize(final String path) {
 
         validatePath(path);
@@ -172,5 +212,17 @@ public class FileSystem implements AutoCloseable {
         final FileNode file = parentDirectory.getFile(nodeNames[nodeNames.length - 1]);
 
         return file.getSize();
+    }
+
+    public byte[] readFile(final String path) throws IOException {
+
+        validatePath(path);
+
+        final String[] nodeNames = path.split("/");
+        final DirectoryNode parentDirectory = getPenultimateNode(nodeNames);
+
+        final FileNode file = parentDirectory.getFile(nodeNames[nodeNames.length - 1]);
+
+        return fileHandler.read(file);
     }
 }
