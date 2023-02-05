@@ -225,4 +225,8 @@ public class FileSystem implements AutoCloseable {
 
         return fileHandler.read(file);
     }
+
+    public void defragment() throws IOException {
+        fileHandler.defragment();
+    }
 }

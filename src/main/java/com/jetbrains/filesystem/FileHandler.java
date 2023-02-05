@@ -197,4 +197,47 @@ public class FileHandler implements AutoCloseable {
         header.getFreeBlocks().addAll(blocks);
         blocks.forEach(header.getUsedBlocks()::remove);
     }
+
+    public void defragment() throws IOException {
+
+        while (!header.getFreeBlocks().isEmpty()) {
+
+            final Long freeBlockNumber = header.getFreeBlocks().remove();
+
+            final Map.Entry<Long, FileNode> blockNumberFileNodeEntry = header.getUsedBlocks().firstEntry();
+            if (blockNumberFileNodeEntry == null) break;
+
+            final Long lastUsedBlock = blockNumberFileNodeEntry.getKey();
+            if (lastUsedBlock < freeBlockNumber) {
+                header.getFreeBlocks().add(freeBlockNumber);
+                break;
+            }
+            final FileNode file = blockNumberFileNodeEntry.getValue();
+            final List<Long> fileBlocks = file.getBlocks();
+            final int blockIndex = findBlockIndex(lastUsedBlock, fileBlocks);
+
+            moveFilePointerToBlock(lastUsedBlock, 0);
+            containerFile.read(bytes);
+            moveFilePointerToBlock(freeBlockNumber, 0);
+            containerFile.write(bytes);
+
+            header.getUsedBlocks().remove(lastUsedBlock);
+            header.getUsedBlocks().put(freeBlockNumber, file);
+
+            fileBlocks.set(blockIndex, freeBlockNumber);
+        }
+
+        containerFile.setLength(HEADER_SIZE + (long) header.getUsedBlocks().size() * BLOCK_SIZE);
+    }
+
+    private static int findBlockIndex(final Long lastUsedBlock, final List<Long> blocks) {
+
+        for (int i = 0; i < blocks.size(); i++) {
+            if (blocks.get(i).equals(lastUsedBlock)) {
+                return i;
+            }
+        }
+
+        throw new RuntimeException("Could not find the block index " + lastUsedBlock);
+    }
 }
